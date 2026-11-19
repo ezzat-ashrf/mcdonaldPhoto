@@ -25,6 +25,14 @@ COMPOSITION: preserve the source pose and visible crop. Center the avatar natura
 BACKGROUND: use one completely plain, solid bright golden-yellow background matching the yellow color associated with the Golden Arches. The background must be edge-to-edge yellow with no pattern, no red accents, no lines, no shapes, no symbols, no texture, no objects, no scenery, no visible vignette, and no multicolor gradient. A barely perceptible yellow-on-yellow studio lighting falloff is allowed only if it remains visually solid yellow. Maintain clean separation between the yellow background and the person's natural skin, hair, and clothing without recoloring the person. ABSOLUTELY NO red, orange, amber, white, cream, brown, black, blue, cyan, green, violet, magenta, gray, or any other background color. Do not create an M or Golden Arches shape. Do not add any logo, brand name, food, packaging, captions, UI, buttons, QR code, watermark, poster frame, booth hardware, or readable text; the application adds its own branded interface.
 OUTPUT: return only the finished avatar artwork, edge-to-edge in exact 9:16 portrait orientation, with no borders, split panels, before-and-after layout, or reference character. The result must feel friendly, confident, modern, premium, and immediately recognizable as the photographed visitor.`;
 
+const caricaturePrompt = `Create one polished vertical 9:16 caricature portrait of every real person in Image 1.
+Image 1 is the authoritative camera photo. Image 2 is a duplicate facial-detail reference of the same people. Image 3 is only a rendering reference; never copy its character, identity, clothing, pose, or background.
+IDENTITY: keep every person immediately recognizable. Preserve age, skin tone, hairstyle, hair color, facial hair, glasses, hijab and other head coverings, clothing, accessories, expression, pose, hands, number of people, left-to-right order, and relative heights. Keep adults clearly adult and preserve all covered hair and skin.
+CARICATURE: use playful, flattering, hand-drawn editorial caricature with a moderately oversized head and tasteful exaggeration of each person's distinctive facial features. Keep their individual likeness; do not substitute a generic cartoon face. Use expressive clean outlines, dimensional cel shading, detailed hair, and polished colors. No insulting or grotesque distortions. Do not invent missing limbs or extra people.
+COMPOSITION: preserve the source pose and visible crop, with comfortable headroom.
+${avatarPrompt.slice(avatarPrompt.indexOf('BACKGROUND:'), avatarPrompt.indexOf('OUTPUT:'))}
+OUTPUT: return only the finished caricature artwork, edge-to-edge in exact 9:16 portrait orientation, without borders, split panels, before-and-after layouts, or reference characters.`;
+
 const avatarStyles = {
   classic2d: 'FINAL RENDER STYLE: elegant premium 2.5D digital illustration with smooth dimensional cel shading, refined clean outlines, softly modeled facial planes, detailed hair strands, realistic fabric folds, and tasteful studio-quality highlights. Avoid plastic 3D rendering.',
   premium3d: 'FINAL RENDER STYLE: premium cinematic 3D animated-character portrait with sophisticated feature-film quality, softly sculpted but identity-accurate facial forms, realistic skin shading without visible pores, carefully groomed hair strands, physically believable fabric, and polished high-end rendering. LIGHTING IS CRITICAL: expose the person for the face, never for the bright yellow background. Use one large soft frontal key light positioned slightly above eye level, a broad gentle fill light at approximately 60 to 70 percent of the key, and soft global illumination. Illuminate both eyes, both cheeks, the nose, mouth, beard, neck, and front of the clothing clearly and evenly. Add natural soft catchlights in both eyes. Lift shadows under the eyebrows, eyes, nose, beard, chin, and collar while retaining subtle dimensional modeling. Keep skin tone natural, warm-neutral, and correctly exposed. Use only a faint narrow rim light for separation; never create a bright halo or allow backlight to dominate. The face must be brighter than the clothing and must not appear underexposed, shadowy, muddy, silhouetted, overly contrasty, or lit primarily from behind. Avoid clipped highlights and flat flash lighting. Preserve the exact adult facial proportions and expression. Avoid toy-like plastic, wax skin, childish styling, giant eyes, oversized head, exaggerated smile, mascot appearance, or generic family-animation character features.'
@@ -72,7 +80,8 @@ exports.generateAvatar = async (req, res) => {
     try {
       await verifyAppCheckAndRateLimit(req, 'avatar', 30_000);
       const input = parseDataUrl(req.body?.imageBase64);
-      const requestedStyle = req.body?.avatarStyle === 'premium3d' ? 'premium3d' : 'classic2d';
+      const requestedStyle = ['classic2d', 'premium3d', 'caricature'].includes(req.body?.avatarStyle)
+        ? req.body.avatarStyle : 'classic2d';
       const stylePath = path.join(__dirname, 'assets', 'AvatarStyleReference.jpeg');
       const styleData = fs.readFileSync(stylePath).toString('base64');
       const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
@@ -80,7 +89,7 @@ exports.generateAvatar = async (req, res) => {
       const endpoint = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
       const body = {
         contents: [{ role: 'user', parts: [
-          { text: `${avatarPrompt}\n${avatarStyles[requestedStyle]}` },
+          { text: requestedStyle === 'caricature' ? caricaturePrompt : `${avatarPrompt}\n${avatarStyles[requestedStyle]}` },
           { inline_data: { mime_type: input.mimeType, data: input.data } },
           { inline_data: { mime_type: input.mimeType, data: input.data } },
           { inline_data: { mime_type: 'image/jpeg', data: styleData } },
