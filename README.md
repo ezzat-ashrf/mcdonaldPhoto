@@ -36,3 +36,9 @@ Never place the service-account JSON or a Gemini API key in this frontend or Git
 ## Firebase
 
 The page writes the newest image with `PUT` to `/latest.json`. Firebase rules must permit the site to write. For production QR download links, upload the image to Storage or a backend and return a public/temporary image URL; large base64 images cannot be encoded directly into a QR code.
+
+## Photo styles
+
+Choose Classic 2D, Premium 3D, or Caricature on the camera screen before taking a photo. Caricature uses a dedicated prompt with tasteful facial exaggeration while preserving recognizable identity, clothing, pose, and the same solid golden-yellow background as the other styles. The request accepts `avatarStyle: "caricature"`; unknown styles fall back to Classic 2D.
+
+After updating this repository, redeploy the `generate-avatar` Google Cloud function using the command above. GitHub Pages publishes the frontend only; the existing deployed function will not support Caricature until it is redeployed. Test all three styles after deployment.
