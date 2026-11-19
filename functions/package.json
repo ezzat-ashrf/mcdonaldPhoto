@@ -2,10 +2,11 @@
   "name": "mcdonald-photo-functions",
   "private": true,
   "main": "index.js",
-  "engines": { "node": "20" },
-  "scripts": { "start": "firebase emulators:start --only functions" },
+  "engines": { "node": "22" },
+  "scripts": { "start": "functions-framework --target=generateAvatar" },
   "dependencies": {
-    "firebase-functions": "^6.4.0",
+    "@google-cloud/functions-framework": "^3.4.5",
+    "firebase-admin": "^13.0.2",
     "google-auth-library": "^9.15.1"
   }
 }

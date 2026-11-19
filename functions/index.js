@@ -2,11 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { onRequest } = require('firebase-functions/v2/https');
-const { defineSecret } = require('firebase-functions/params');
 const { GoogleAuth } = require('google-auth-library');
+const { initializeApp } = require('firebase-admin/app');
+const { getAppCheck } = require('firebase-admin/app-check');
 
-const serviceAccountJson = defineSecret('GOOGLE_SERVICE_ACCOUNT_JSON');
 const projectId = 'gen-lang-client-0899943261';
 const location = 'global';
 const model = 'gemini-3-pro-image';
@@ -15,6 +14,8 @@ const allowedOrigins = new Set([
   'http://localhost:8080',
   'http://127.0.0.1:8080',
 ]);
+initializeApp({ projectId });
+const recentRequests = new Map();
 
 const avatarPrompt = `Create one polished vertical 9:16 AI avatar portrait of every real person in Image 1.
 Image 1 is the authoritative camera photo. Image 2 is only a duplicate facial-detail reference of the same photo and is not another person. Image 3 is a style reference only: use its clean, friendly, premium animated-avatar rendering style, but never copy its girl, face, hair, clothing, pose, body, text, booth, screen, or background.
@@ -29,7 +30,25 @@ function setCors(req, res) {
   if (allowedOrigins.has(origin)) res.set('Access-Control-Allow-Origin', origin);
   res.set('Vary', 'Origin');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, X-Firebase-AppCheck');
+}
+
+async function verifyAppCheckAndRateLimit(req) {
+  const token = req.get('X-Firebase-AppCheck');
+  if (!token) throw Object.assign(new Error('Missing App Check token'), { statusCode: 401 });
+  let claims;
+  try { claims = await getAppCheck().verifyToken(token); }
+  catch (_) { throw Object.assign(new Error('Invalid App Check token'), { statusCode: 401 }); }
+  const key = `${claims.appId || claims.sub || 'app'}:${req.ip || 'unknown'}`;
+  const now = Date.now();
+  const last = recentRequests.get(key) || 0;
+  if (now - last < 30_000) {
+    throw Object.assign(new Error('Please wait 30 seconds before generating another avatar'), { statusCode: 429 });
+  }
+  recentRequests.set(key, now);
+  if (recentRequests.size > 5000) {
+    for (const [entry, time] of recentRequests) if (now - time > 3_600_000) recentRequests.delete(entry);
+  }
 }
 
 function parseDataUrl(value) {
@@ -39,20 +58,18 @@ function parseDataUrl(value) {
   return { mimeType: match[1], data: match[2] };
 }
 
-exports.generateAvatar = onRequest(
-  { region: 'us-central1', timeoutSeconds: 300, memory: '1GiB', secrets: [serviceAccountJson] },
-  async (req, res) => {
+exports.generateAvatar = async (req, res) => {
     setCors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
     if (!allowedOrigins.has(req.headers.origin)) return res.status(403).json({ error: 'Origin not allowed' });
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
 
     try {
+      await verifyAppCheckAndRateLimit(req);
       const input = parseDataUrl(req.body?.imageBase64);
       const stylePath = path.join(__dirname, 'assets', 'AvatarStyleReference.jpeg');
       const styleData = fs.readFileSync(stylePath).toString('base64');
-      const credentials = JSON.parse(serviceAccountJson.value());
-      const auth = new GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+      const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
       const token = await auth.getAccessToken();
       const endpoint = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
       const body = {
@@ -83,7 +100,6 @@ exports.generateAvatar = onRequest(
       return res.status(200).json({ imageBase64: `data:${mimeType};base64,${data}` });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ error: error.message || 'Internal error' });
+      return res.status(error.statusCode || 500).json({ error: error.message || 'Internal error' });
     }
-  },
-);
+};

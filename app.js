@@ -62,8 +62,14 @@ async function generateAvatar(captured) {
   if (!CONFIG.avatarEndpoint) {
     throw new Error('AI backend is not configured yet. Add the deployed function URL to config.js.');
   }
+  if (typeof window.getPhotoBoothAppCheckToken !== 'function') {
+    throw new Error('App Check could not start. Reload the page.');
+  }
+  const appCheckToken = await window.getPhotoBoothAppCheckToken();
   const response = await fetch(CONFIG.avatarEndpoint, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: captured }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Firebase-AppCheck': appCheckToken },
+    body: JSON.stringify({ imageBase64: captured }),
   });
   if (!response.ok) throw new Error(`Avatar generation failed (${response.status})`);
   const result = await response.json();

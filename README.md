@@ -14,18 +14,15 @@ Then open `http://localhost:8080`.
 
 ## AI avatar endpoint
 
-The `functions/` folder contains a secure Firebase HTTPS function using the same Vertex AI project, `gemini-3-pro-image` model, CIB avatar prompt, and style reference as the Unity project.
+The `functions/` folder contains a protected Google Cloud HTTPS function using the same Vertex AI project, `gemini-3-pro-image` model, CIB avatar prompt, and style reference as the Unity project. It requires a valid Firebase App Check token and applies a 30-second generation cooldown.
 
-Install and authenticate Firebase CLI, then store the Unity service account as a Firebase secret (never commit it):
+Deploy it to the Unity Vertex project with Google Cloud CLI:
 
 ```powershell
-npm install -g firebase-tools
-firebase login
-firebase functions:secrets:set GOOGLE_SERVICE_ACCOUNT_JSON
-firebase deploy --only functions
+gcloud functions deploy generate-avatar --gen2 --project gen-lang-client-0899943261 --region us-central1 --runtime nodejs22 --source functions --entry-point generateAvatar --trigger-http --allow-unauthenticated --memory 1Gi --timeout 300s
 ```
 
-When prompted for the secret value, paste the complete contents of the Unity project's `Assets/StreamingAssets/service-account.json`. After deployment, paste the returned `generateAvatar` HTTPS URL into `config.js` and commit/push `config.js`.
+The deployed function uses its Google Cloud runtime identity, so no Unity private key is published. Register the web app in Firebase App Check with a reCAPTCHA Enterprise score key restricted to `ezzat-ashrf.github.io`. Put the public Firebase web configuration, public reCAPTCHA site key, and returned function URL in `config.js`, then commit/push it. These browser values identify the app but are not private credentials.
 
 The endpoint accepts:
 
