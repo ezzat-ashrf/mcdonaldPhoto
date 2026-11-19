@@ -142,12 +142,12 @@ function loadImage(source) {
 }
 
 async function composeQrFrame() {
-  const [photo, frame] = await Promise.all([loadImage(finalImage), loadImage('assets/McDonaldsQrFrame.png')]);
+  const [photo, frame] = await Promise.all([loadImage(finalImage), loadImage('assets/McDonaldsMoment.png')]);
   const canvas = document.createElement('canvas');
   canvas.width = 941; canvas.height = 1672;
   const context = canvas.getContext('2d');
   context.drawImage(frame, 0, 0, canvas.width, canvas.height);
-  const target = { x: 145, y: 354, width: 651, height: 972 };
+  const target = { x: 145, y: 352, width: 651, height: 971 };
   const sourceAspect = photo.naturalWidth / photo.naturalHeight;
   const targetAspect = target.width / target.height;
   let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
