@@ -14,16 +14,27 @@ Then open `http://localhost:8080`.
 
 ## AI avatar endpoint
 
-Set `avatarEndpoint` near the top of `app.js`. It must be a secure backend that accepts:
+The `functions/` folder contains a secure Firebase HTTPS function using the same Vertex AI project, `gemini-3-pro-image` model, CIB avatar prompt, and style reference as the Unity project.
+
+Install and authenticate Firebase CLI, then store the Unity service account as a Firebase secret (never commit it):
+
+```powershell
+npm install -g firebase-tools
+firebase login
+firebase functions:secrets:set GOOGLE_SERVICE_ACCOUNT_JSON
+firebase deploy --only functions
+```
+
+When prompted for the secret value, paste the complete contents of the Unity project's `Assets/StreamingAssets/service-account.json`. After deployment, paste the returned `generateAvatar` HTTPS URL into `config.js` and commit/push `config.js`.
+
+The endpoint accepts:
 
 ```json
 { "imageBase64": "data:image/jpeg;base64,..." }
 ```
 
 and returns either `{ "imageBase64": "..." }` or `{ "imageUrl": "https://..." }`.
-Never place a Gemini API key in this frontend.
-
-When `avatarEndpoint` is blank, the captured photo is used as the result so the complete kiosk flow can be tested immediately.
+Never place the service-account JSON or a Gemini API key in this frontend or GitHub repository. If `avatarEndpoint` is blank, the page now reports a clear configuration error instead of silently showing the original capture as though it were an AI result.
 
 ## Firebase
 

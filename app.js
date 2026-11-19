@@ -3,7 +3,7 @@
 const CONFIG = {
   // A secure server endpoint accepting { imageBase64 } and returning
   // { imageBase64 } or { imageUrl }. Leave blank to test with the captured photo.
-  avatarEndpoint: '',
+  avatarEndpoint: window.PHOTO_BOOTH_CONFIG?.avatarEndpoint || '',
   firebaseUrl: 'https://photo-game-2f638-default-rtdb.firebaseio.com/latest.json',
   uploadRetries: 4,
 };
@@ -59,7 +59,9 @@ function captureJpeg() {
 }
 
 async function generateAvatar(captured) {
-  if (!CONFIG.avatarEndpoint) return captured;
+  if (!CONFIG.avatarEndpoint) {
+    throw new Error('AI backend is not configured yet. Add the deployed function URL to config.js.');
+  }
   const response = await fetch(CONFIG.avatarEndpoint, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: captured }),
   });
@@ -96,7 +98,7 @@ async function capture() {
     const captured = captureJpeg();
     stopCamera();
     $('processingImage').src = captured;
-    $('processingText').textContent = CONFIG.avatarEndpoint ? 'Creating your avatar…' : 'Preparing your photo…';
+    $('processingText').textContent = 'Creating your avatar…';
     showPage('processingPage');
     finalImage = await generateAvatar(captured);
     $('resultImage').src = finalImage;

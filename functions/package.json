@@ -1,0 +1,11 @@
+{
+  "name": "mcdonald-photo-functions",
+  "private": true,
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "scripts": { "start": "firebase emulators:start --only functions" },
+  "dependencies": {
+    "firebase-functions": "^6.4.0",
+    "google-auth-library": "^9.15.1"
+  }
+}
