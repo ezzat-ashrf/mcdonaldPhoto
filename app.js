@@ -73,7 +73,7 @@ async function generateAvatar(captured) {
   const response = await fetch(CONFIG.avatarEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Firebase-AppCheck': appCheckToken },
-    body: JSON.stringify({ imageBase64: captured, avatarStyle: CONFIG.avatarStyle }),
+    body: JSON.stringify({ imageBase64: captured, avatarStyle: $('avatarStyle').value }),
   });
   if (!response.ok) throw new Error(`Avatar generation failed (${response.status})`);
   const result = await response.json();
@@ -115,7 +115,7 @@ async function capture() {
     const captured = captureJpeg();
     stopCamera();
     $('processingImage').src = captured;
-    $('processingText').textContent = 'Creating your avatar…';
+    $('processingText').textContent = $('avatarStyle').value === 'caricature' ? 'Creating your caricature…' : 'Creating your avatar…';
     showPage('processingPage');
     finalImage = await generateAvatar(captured);
     $('resultImage').src = finalImage;
@@ -223,6 +223,8 @@ async function showQr() {
     button.disabled = false;
   }
 }
+
+$('avatarStyle').value = ['classic2d', 'premium3d', 'caricature'].includes(CONFIG.avatarStyle) ? CONFIG.avatarStyle : 'classic2d';
 
 $('startButton').addEventListener('click', openCamera);
 $('captureButton').addEventListener('click', startCaptureCountdown);
