@@ -20,10 +20,15 @@ const recentRequests = new Map();
 const avatarPrompt = `Create one polished vertical 9:16 AI avatar portrait of every real person in Image 1.
 Image 1 is the authoritative camera photo. Image 2 is only a duplicate facial-detail reference of the same photo and is not another person. Image 3 is a style reference only: use its clean, friendly, premium animated-avatar rendering style, but never copy its girl, face, hair, clothing, pose, body, text, booth, screen, or background.
 IDENTITY IS CRITICAL: preserve each visitor's exact recognizable identity, face shape, eyes, eyebrows, nose, lips, smile or neutral expression, skin tone, age, gender presentation, hairstyle, hair color, facial hair, glasses, hijab or other religious head covering, distinctive features, body type, pose, hand position, clothing colors, accessories, and the original number of people. Never beautify, de-age, slim, widen, masculinize, feminize, remove a hijab, expose covered hair or skin, or replace the visitor with the reference character.
-AVATAR TREATMENT: transform the photographed visitor into a high-quality contemporary animated character with elegant 2.5D digital illustration, smooth but dimensional cel shading, refined clean outlines, expressive natural eyes that retain the visitor's real eye shape and color, softly modeled facial planes, detailed hair strands, realistic fabric folds, and tasteful studio-quality highlights. Keep adult visitors clearly adult. Avoid childish proportions, giant eyes, an oversized head, plastic 3D skin, doll-like features, or a generic anime face.
+AVATAR TREATMENT: transform the photographed visitor into a high-quality contemporary animated character while strictly preserving their recognizable identity, real facial geometry, expression, eye shape and color, hair, facial hair, clothing, pose, and adult proportions. Keep adult visitors clearly adult. Avoid childish proportions, giant eyes, an oversized head, doll-like features, or a generic anime face.
 COMPOSITION: preserve the source pose and visible crop. Center the avatar naturally with comfortable headroom. If one person is present, show that person once. If two people are present, show both once in the same left-to-right order and with their natural relative heights. Do not invent missing limbs or body regions.
 BACKGROUND: use one completely plain, solid bright golden-yellow background matching the yellow color associated with the Golden Arches. The background must be edge-to-edge yellow with no pattern, no red accents, no lines, no shapes, no symbols, no texture, no objects, no scenery, no visible vignette, and no multicolor gradient. A barely perceptible yellow-on-yellow studio lighting falloff is allowed only if it remains visually solid yellow. Maintain clean separation between the yellow background and the person's natural skin, hair, and clothing without recoloring the person. ABSOLUTELY NO red, orange, amber, white, cream, brown, black, blue, cyan, green, violet, magenta, gray, or any other background color. Do not create an M or Golden Arches shape. Do not add any logo, brand name, food, packaging, captions, UI, buttons, QR code, watermark, poster frame, booth hardware, or readable text; the application adds its own branded interface.
 OUTPUT: return only the finished avatar artwork, edge-to-edge in exact 9:16 portrait orientation, with no borders, split panels, before-and-after layout, or reference character. The result must feel friendly, confident, modern, premium, and immediately recognizable as the photographed visitor.`;
+
+const avatarStyles = {
+  classic2d: 'FINAL RENDER STYLE: elegant premium 2.5D digital illustration with smooth dimensional cel shading, refined clean outlines, softly modeled facial planes, detailed hair strands, realistic fabric folds, and tasteful studio-quality highlights. Avoid plastic 3D rendering.',
+  premium3d: 'FINAL RENDER STYLE: premium cinematic 3D animated-character portrait with sophisticated feature-film quality, softly sculpted but identity-accurate facial forms, realistic skin shading without visible pores, carefully groomed hair strands, physically believable fabric, soft global illumination, subtle rim lighting, and polished high-end rendering. Preserve the exact adult facial proportions and expression. Avoid toy-like plastic, wax skin, childish styling, giant eyes, oversized head, exaggerated smile, mascot appearance, or generic family-animation character features.'
+};
 
 function setCors(req, res) {
   const origin = req.headers.origin;
@@ -67,6 +72,7 @@ exports.generateAvatar = async (req, res) => {
     try {
       await verifyAppCheckAndRateLimit(req, 'avatar', 30_000);
       const input = parseDataUrl(req.body?.imageBase64);
+      const requestedStyle = req.body?.avatarStyle === 'premium3d' ? 'premium3d' : 'classic2d';
       const stylePath = path.join(__dirname, 'assets', 'AvatarStyleReference.jpeg');
       const styleData = fs.readFileSync(stylePath).toString('base64');
       const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
@@ -74,7 +80,7 @@ exports.generateAvatar = async (req, res) => {
       const endpoint = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
       const body = {
         contents: [{ role: 'user', parts: [
-          { text: avatarPrompt },
+          { text: `${avatarPrompt}\n${avatarStyles[requestedStyle]}` },
           { inline_data: { mime_type: input.mimeType, data: input.data } },
           { inline_data: { mime_type: input.mimeType, data: input.data } },
           { inline_data: { mime_type: 'image/jpeg', data: styleData } },

@@ -4,6 +4,7 @@ const CONFIG = {
   // A secure server endpoint accepting { imageBase64 } and returning
   // { imageBase64 } or { imageUrl }. Leave blank to test with the captured photo.
   avatarEndpoint: window.PHOTO_BOOTH_CONFIG?.avatarEndpoint || '',
+  avatarStyle: window.PHOTO_BOOTH_CONFIG?.avatarStyle || 'classic2d',
   qrEndpoint: window.PHOTO_BOOTH_CONFIG?.qrEndpoint || '',
   firebaseUrl: 'https://photo-game-2f638-default-rtdb.firebaseio.com/latest.json',
   uploadRetries: 4,
@@ -70,7 +71,7 @@ async function generateAvatar(captured) {
   const response = await fetch(CONFIG.avatarEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Firebase-AppCheck': appCheckToken },
-    body: JSON.stringify({ imageBase64: captured }),
+    body: JSON.stringify({ imageBase64: captured, avatarStyle: CONFIG.avatarStyle }),
   });
   if (!response.ok) throw new Error(`Avatar generation failed (${response.status})`);
   const result = await response.json();
