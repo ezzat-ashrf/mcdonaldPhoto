@@ -90,7 +90,14 @@ async function sendToFirebase(imageBase64) {
       const response = await fetch(CONFIG.firebaseUrl, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
-      if (response.ok) return body.id;
+      if (response.ok) {
+        const photoUrl = CONFIG.firebaseUrl.replace(/\/latest\.json(?:\?.*)?$/, `/photos/${encodeURIComponent(body.id)}.json`);
+        const photoResponse = await fetch(photoUrl, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        if (!photoResponse.ok) throw new Error(`Firebase photo archive rejected upload (${photoResponse.status})`);
+        return new URL(`photo.html?id=${encodeURIComponent(body.id)}`, location.href).href;
+      }
       if (response.status < 500 && response.status !== 429) throw new Error(`Firebase rejected upload (${response.status})`);
       lastError = new Error(`Firebase temporary error (${response.status})`);
     } catch (error) { lastError = error; }
@@ -128,7 +135,12 @@ function showQr() {
   if (!finalImage) return;
   const qr = $('qrCode'); qr.replaceChildren();
   $('downloadPhoto').href = finalImage;
-  const qrValue = finalImage.length < 2500 ? finalImage : (remoteImageUrl || location.href);
+  if (!remoteImageUrl) {
+    qr.textContent = 'The photo link is still uploading. Close this window and try again.';
+    $('qrDialog').showModal();
+    return;
+  }
+  const qrValue = remoteImageUrl;
   if (window.QRCode) new QRCode(qr, { text: qrValue, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M });
   else qr.textContent = 'QR library could not load. Use Download photo.';
   $('qrDialog').showModal();
