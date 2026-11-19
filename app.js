@@ -15,6 +15,7 @@ const pages = [...document.querySelectorAll('.page')];
 let stream = null;
 let finalImage = '';
 let remoteImageUrl = '';
+let countdownRun = 0;
 
 function showPage(id) {
   pages.forEach((page) => page.classList.toggle('active', page.id === id));
@@ -31,6 +32,7 @@ function stopCamera() {
 }
 
 async function openCamera() {
+  cancelCountdown();
   showPage('capturePage');
   $('cameraMessage').style.display = 'none';
   stopCamera();
@@ -128,7 +130,34 @@ async function capture() {
   }
 }
 
+function cancelCountdown() {
+  countdownRun += 1;
+  const countdown = $('countdown');
+  if (countdown) { countdown.hidden = true; countdown.textContent = ''; }
+  $('captureButton').disabled = false;
+}
+
+async function startCaptureCountdown() {
+  const video = $('camera');
+  if (!stream || !video.videoWidth || $('captureButton').disabled) return;
+  const run = ++countdownRun;
+  const countdown = $('countdown');
+  $('captureButton').disabled = true;
+  countdown.hidden = false;
+  for (let number = 3; number >= 1; number -= 1) {
+    if (run !== countdownRun) return;
+    countdown.textContent = number;
+    await delay(1000);
+  }
+  if (run !== countdownRun) return;
+  countdown.hidden = true;
+  countdown.textContent = '';
+  await capture();
+  if (run === countdownRun) $('captureButton').disabled = false;
+}
+
 function home() {
+  cancelCountdown();
   stopCamera(); finalImage = ''; remoteImageUrl = '';
   showPage('startPage'); playStartVideo();
 }
@@ -196,7 +225,7 @@ async function showQr() {
 }
 
 $('startButton').addEventListener('click', openCamera);
-$('captureButton').addEventListener('click', capture);
+$('captureButton').addEventListener('click', startCaptureCountdown);
 $('retakeButton').addEventListener('click', openCamera);
 $('homeFromCamera').addEventListener('click', home);
 $('homeFromResult').addEventListener('click', home);
