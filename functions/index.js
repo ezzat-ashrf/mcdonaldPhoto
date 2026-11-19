@@ -26,10 +26,10 @@ BACKGROUND: use one completely plain, solid bright golden-yellow background matc
 OUTPUT: return only the finished avatar artwork, edge-to-edge in exact 9:16 portrait orientation, with no borders, split panels, before-and-after layout, or reference character. The result must feel friendly, confident, modern, premium, and immediately recognizable as the photographed visitor.`;
 
 const caricaturePrompt = `Create one polished vertical 9:16 caricature portrait of every real person in Image 1.
-Image 1 is the authoritative camera photo. Image 2 is a duplicate facial-detail reference of the same people. Image 3 is only a rendering reference; never copy its character, identity, clothing, pose, or background.
+Image 1 is the authoritative camera photo. Image 2 is a duplicate facial-detail reference of the same people. Use these photos for identity, not for realistic facial proportions.
 IDENTITY: keep every person immediately recognizable. Preserve age, skin tone, hairstyle, hair color, facial hair, glasses, hijab and other head coverings, clothing, accessories, expression, pose, hands, number of people, left-to-right order, and relative heights. Keep adults clearly adult and preserve all covered hair and skin.
-CARICATURE: use playful, flattering, hand-drawn editorial caricature with a moderately oversized head and tasteful exaggeration of each person's distinctive facial features. Keep their individual likeness; do not substitute a generic cartoon face. Use expressive clean outlines, dimensional cel shading, detailed hair, and polished colors. No insulting or grotesque distortions. Do not invent missing limbs or extra people.
-COMPOSITION: preserve the source pose and visible crop, with comfortable headroom.
+CARICATURE IS THE PRIMARY REQUIREMENT: create a bold professional hand-drawn editorial caricature, like a skilled live-event caricature artist. Enlarge the head to approximately 1.5 to 2 times its natural size relative to the shoulders and body. Study each person's actual facial structure and strongly exaggerate their two or three most distinctive individual features: for example nose shape, jaw width, chin length, cheekbones, forehead, eyebrow arch, smile, or ears. Push the existing shapes and asymmetry while keeping the person instantly recognizable. Preserve likeness through those distinctive features, not by keeping exact realistic facial geometry. Do not enlarge everyone's eyes or give everyone the same face. Use confident ink linework, expressive contours, cross-hatching and hand-painted watercolor or gouache shading with visible brush texture on the person. The result must have obvious humorous anatomical exaggeration even at thumbnail size. Avoid generic cartoon avatars, anime, Disney/Pixar animation styling, 3D renders, smooth cel-shaded avatar filters, dolls, and realistic-proportion illustrated portraits. Keep the humor friendly and respectful. Do not invent missing limbs or extra people.
+COMPOSITION: retain the source pose and visible body regions, but allow reframing and extra headroom to accommodate the enlarged caricature head without clipping hair or head coverings.
 ${avatarPrompt.slice(avatarPrompt.indexOf('BACKGROUND:'), avatarPrompt.indexOf('OUTPUT:'))}
 OUTPUT: return only the finished caricature artwork, edge-to-edge in exact 9:16 portrait orientation, without borders, split panels, before-and-after layouts, or reference characters.`;
 
@@ -82,8 +82,10 @@ exports.generateAvatar = async (req, res) => {
       const input = parseDataUrl(req.body?.imageBase64);
       const requestedStyle = ['classic2d', 'premium3d', 'caricature'].includes(req.body?.avatarStyle)
         ? req.body.avatarStyle : 'classic2d';
-      const stylePath = path.join(__dirname, 'assets', 'AvatarStyleReference.jpeg');
-      const styleData = fs.readFileSync(stylePath).toString('base64');
+      // The animated-avatar reference biases caricatures toward ordinary cartoons.
+      // Only send that reference for the existing avatar styles.
+      const styleData = requestedStyle === 'caricature' ? null
+        : fs.readFileSync(path.join(__dirname, 'assets', 'AvatarStyleReference.jpeg')).toString('base64');
       const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
       const token = await auth.getAccessToken();
       const endpoint = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
@@ -92,7 +94,7 @@ exports.generateAvatar = async (req, res) => {
           { text: requestedStyle === 'caricature' ? caricaturePrompt : `${avatarPrompt}\n${avatarStyles[requestedStyle]}` },
           { inline_data: { mime_type: input.mimeType, data: input.data } },
           { inline_data: { mime_type: input.mimeType, data: input.data } },
-          { inline_data: { mime_type: 'image/jpeg', data: styleData } },
+          ...(styleData ? [{ inline_data: { mime_type: 'image/jpeg', data: styleData } }] : []),
         ] }],
         generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16' } },
       };
