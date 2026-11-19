@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#449bcf">
-  <title>myCIB Photo Booth</title>
+  <title>McDonald's Photo Booth</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main id="booth" aria-live="polite">
     <section id="startPage" class="page active">
-      <video id="startVideo" class="background" src="assets/StartScreen.mp4" muted loop playsinline preload="auto" poster="assets/StartScreen.jpeg"></video>
+      <video id="startVideo" class="background" src="assets/screensaver.mp4" muted loop playsinline preload="auto"></video>
       <button id="startButton" class="full-hit" type="button" aria-label="Start photo booth"></button>
     </section>
 
     <section id="capturePage" class="page">
-      <img class="background" src="assets/CaptureScreen.jpeg" alt="">
+      <img class="background" src="assets/McDonaldsCapture.png" alt="">
       <div class="photo-window"><video id="camera" autoplay muted playsinline></video></div>
       <div id="cameraMessage" class="status"></div>
       <button id="homeFromCamera" class="hit home-camera" type="button" aria-label="Home"></button>
@@ -23,13 +23,13 @@
     </section>
 
     <section id="processingPage" class="page">
-      <img class="background" src="assets/ProcessingScreen.jpeg" alt="">
+      <img class="background" src="assets/McDonaldsMoment.png" alt="">
       <div class="photo-window"><img id="processingImage" alt="Captured photo"></div>
       <div class="busy"><span></span><p id="processingText">Creating your avatar…</p></div>
     </section>
 
     <section id="resultPage" class="page">
-      <img class="background" src="assets/ResultScreen.jpeg" alt="">
+      <img class="background" src="assets/McDonaldsResult.png" alt="">
       <div class="photo-window"><img id="resultImage" alt="Your generated avatar"></div>
       <button id="retakeButton" class="hit retake" type="button" aria-label="Retake"></button>
       <button id="qrButton" class="hit qr" type="button" aria-label="Get QR code"></button>

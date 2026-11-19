@@ -2,20 +2,20 @@
 * { box-sizing: border-box; }
 html, body { width:100%; height:100%; margin:0; overflow:hidden; background:#101827; }
 body { display:grid; place-items:center; touch-action:manipulation; }
-#booth { position:relative; width:min(100vw, calc(100vh * .625)); height:min(100vh, 160vw); aspect-ratio:10/16; overflow:hidden; background:#48a2cf; }
+#booth { position:relative; width:min(100vw, calc(100vh * .562799)); height:min(100vh, 177.6833vw); aspect-ratio:941/1672; overflow:hidden; background:#c80000; }
 .page { position:absolute; inset:0; display:none; }
 .page.active { display:block; }
 .background { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; }
 .full-hit, .hit { position:absolute; border:0; padding:0; background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .full-hit { inset:0; width:100%; height:100%; }
-/* Original art is 900x1600. White opening: x141, y338, w619, h928. */
-.photo-window { position:absolute; left:15.6667%; top:21.125%; width:68.7778%; height:58%; overflow:hidden; background:white; }
+/* McDonald's art is 941x1672. Capture opening: x145, y351, w651, h973. */
+.photo-window { position:absolute; left:15.4091%; top:20.9928%; width:69.1817%; height:58.1938%; overflow:hidden; background:#111; }
 .photo-window video, .photo-window img { width:100%; height:100%; display:block; object-fit:cover; object-position:center; }
-.home-camera { left:14%; top:84%; width:18%; height:12%; }
-.capture { left:37%; top:82%; width:26%; height:15%; border-radius:50%; }
-.retake { left:18%; top:83.5%; width:30%; height:10%; }
-.qr { left:52%; top:83.5%; width:30%; height:10%; }
-.home-result { left:42%; top:91%; width:16%; height:8%; }
+.home-camera { left:13.8%; top:84.7%; width:15%; height:9%; border-radius:50%; }
+.capture { left:40.5%; top:83.5%; width:19%; height:11%; border-radius:50%; }
+.retake { left:14.2%; top:83.3%; width:34.5%; height:7%; border-radius:3rem; }
+.qr { left:51.3%; top:83.3%; width:34.5%; height:7%; border-radius:3rem; }
+.home-result { left:44%; top:91.1%; width:12%; height:7%; border-radius:50%; }
 .status { position:absolute; left:18%; right:18%; top:48%; padding:1rem; border-radius:1rem; text-align:center; background:#001d35cc; font-size:clamp(14px,2.2vh,28px); display:none; }
 .busy { position:absolute; inset:0; display:grid; place-content:center; justify-items:center; color:#fff; text-shadow:0 2px 5px #123; pointer-events:none; }
 .busy span { width:64px; height:64px; border:7px solid #ffffff55; border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; }
@@ -27,4 +27,4 @@ dialog::backdrop { background:#001427cc; }
 #qrCode { display:grid; place-items:center; min-height:270px; }
 #qrCode img, #qrCode canvas { max-width:100%; height:auto!important; }
 #downloadPhoto { display:inline-block; margin-top:18px; padding:14px 22px; border-radius:12px; color:white; background:#316aa7; text-decoration:none; font-weight:bold; }
-@media (orientation:landscape) { #booth { height:100vh; width:62.5vh; } }
+@media (orientation:landscape) { #booth { height:100vh; width:56.2799vh; } }
