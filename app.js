@@ -4,6 +4,7 @@ const CONFIG = {
   // A secure server endpoint accepting { imageBase64 } and returning
   // { imageBase64 } or { imageUrl }. Leave blank to test with the captured photo.
   avatarEndpoint: window.PHOTO_BOOTH_CONFIG?.avatarEndpoint || '',
+  qrEndpoint: window.PHOTO_BOOTH_CONFIG?.qrEndpoint || '',
   firebaseUrl: 'https://photo-game-2f638-default-rtdb.firebaseio.com/latest.json',
   uploadRetries: 4,
 };
@@ -131,19 +132,66 @@ function home() {
   showPage('startPage'); playStartVideo();
 }
 
-function showQr() {
-  if (!finalImage) return;
-  const qr = $('qrCode'); qr.replaceChildren();
-  $('downloadPhoto').href = finalImage;
-  if (!remoteImageUrl) {
-    qr.textContent = 'The photo link is still uploading. Close this window and try again.';
-    $('qrDialog').showModal();
-    return;
+function loadImage(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Could not prepare the QR image'));
+    image.src = source;
+  });
+}
+
+async function composeQrFrame() {
+  const [photo, frame] = await Promise.all([loadImage(finalImage), loadImage('assets/McDonaldsQrFrame.png')]);
+  const canvas = document.createElement('canvas');
+  canvas.width = 941; canvas.height = 1672;
+  const context = canvas.getContext('2d');
+  context.drawImage(frame, 0, 0, canvas.width, canvas.height);
+  const target = { x: 145, y: 354, width: 651, height: 972 };
+  const sourceAspect = photo.naturalWidth / photo.naturalHeight;
+  const targetAspect = target.width / target.height;
+  let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
+  if (sourceAspect > targetAspect) {
+    sw = photo.naturalHeight * targetAspect;
+    sx = (photo.naturalWidth - sw) / 2;
+  } else {
+    sh = photo.naturalWidth / targetAspect;
+    sy = (photo.naturalHeight - sh) / 2;
   }
-  const qrValue = remoteImageUrl;
-  if (window.QRCode) new QRCode(qr, { text: qrValue, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M });
-  else qr.textContent = 'QR library could not load. Use Download photo.';
-  $('qrDialog').showModal();
+  context.drawImage(photo, sx, sy, sw, sh, target.x, target.y, target.width, target.height);
+  return canvas.toDataURL('image/jpeg', .88);
+}
+
+async function showQr() {
+  if (!finalImage) return;
+  const button = $('qrButton');
+  const qr = $('qrCode');
+  button.disabled = true;
+  qr.textContent = 'Uploading your framed photo and creating QR…';
+  if (!$('qrDialog').open) $('qrDialog').showModal();
+  try {
+    const framedImage = await composeQrFrame();
+    const appCheckToken = await window.getPhotoBoothAppCheckToken();
+    const response = await fetch(CONFIG.qrEndpoint || window.PHOTO_BOOTH_CONFIG.qrEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Firebase-AppCheck': appCheckToken },
+      body: JSON.stringify({ imageBase64: framedImage }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.qrCodeUrl) throw new Error(result.error || `QR generation failed (${response.status})`);
+    const qrImage = document.createElement('img');
+    qrImage.src = result.qrCodeUrl;
+    qrImage.alt = 'QR code for your framed photo';
+    qrImage.width = 260; qrImage.height = 260;
+    qr.replaceChildren(qrImage);
+    $('downloadPhoto').href = framedImage;
+    $('downloadPhoto').download = 'mcdonalds-moment.jpg';
+  } catch (error) {
+    qr.textContent = `${error.message}. Close and tap GET QR to retry.`;
+    console.error(error);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 $('startButton').addEventListener('click', openCamera);

@@ -22,7 +22,7 @@ Image 1 is the authoritative camera photo. Image 2 is only a duplicate facial-de
 IDENTITY IS CRITICAL: preserve each visitor's exact recognizable identity, face shape, eyes, eyebrows, nose, lips, smile or neutral expression, skin tone, age, gender presentation, hairstyle, hair color, facial hair, glasses, hijab or other religious head covering, distinctive features, body type, pose, hand position, clothing colors, accessories, and the original number of people. Never beautify, de-age, slim, widen, masculinize, feminize, remove a hijab, expose covered hair or skin, or replace the visitor with the reference character.
 AVATAR TREATMENT: transform the photographed visitor into a high-quality contemporary animated character with elegant 2.5D digital illustration, smooth but dimensional cel shading, refined clean outlines, expressive natural eyes that retain the visitor's real eye shape and color, softly modeled facial planes, detailed hair strands, realistic fabric folds, and tasteful studio-quality highlights. Keep adult visitors clearly adult. Avoid childish proportions, giant eyes, an oversized head, plastic 3D skin, doll-like features, or a generic anime face.
 COMPOSITION: preserve the source pose and visible crop. Center the avatar naturally with comfortable headroom. If one person is present, show that person once. If two people are present, show both once in the same left-to-right order and with their natural relative heights. Do not invent missing limbs or body regions.
-BACKGROUND: create an original clean McDonald's-inspired digital environment using rich restaurant red, bright golden yellow, warm amber highlights, and subtle soft cream accents. Use a premium energetic gradient with restrained curved light ribbons and a tasteful warm glow, while keeping the background uncluttered and clearly behind the avatar. The palette should feel cheerful, bold, friendly, and unmistakably connected to McDonald's colors without copying a restaurant interior. Do not add the Golden Arches, a McDonald's logo, brand name, food, packaging, captions, UI, buttons, QR code, watermark, poster frame, booth hardware, or any readable text; the application adds its own branded interface.
+BACKGROUND: create an original clean McDonald's-inspired graphic pattern using ONLY two colors: rich McDonald's red and bright golden McDonald's yellow. Red must be the dominant background color and yellow may be used only for the pattern, glow, outlines, and highlights. Use a premium energetic pattern with restrained curved ribbons, simple geometric shapes, and subtle tonal depth created only from red and yellow. Do not use white, cream, orange, amber, brown, black, blue, cyan, green, violet, magenta, gray, or any other color anywhere in the background. Keep it uncluttered and clearly behind the avatar. Do not add the Golden Arches, a McDonald's logo, brand name, food, packaging, captions, UI, buttons, QR code, watermark, poster frame, booth hardware, or any readable text; the application adds its own branded interface.
 OUTPUT: return only the finished avatar artwork, edge-to-edge in exact 9:16 portrait orientation, with no borders, split panels, before-and-after layout, or reference character. The result must feel friendly, confident, modern, premium, and immediately recognizable as the photographed visitor.`;
 
 function setCors(req, res) {
@@ -33,17 +33,17 @@ function setCors(req, res) {
   res.set('Access-Control-Allow-Headers', 'Content-Type, X-Firebase-AppCheck');
 }
 
-async function verifyAppCheckAndRateLimit(req) {
+async function verifyAppCheckAndRateLimit(req, action = 'avatar', cooldownMs = 30_000) {
   const token = req.get('X-Firebase-AppCheck');
   if (!token) throw Object.assign(new Error('Missing App Check token'), { statusCode: 401 });
   let claims;
   try { claims = await getAppCheck().verifyToken(token); }
   catch (_) { throw Object.assign(new Error('Invalid App Check token'), { statusCode: 401 }); }
-  const key = `${claims.appId || claims.sub || 'app'}:${req.ip || 'unknown'}`;
+  const key = `${action}:${claims.appId || claims.sub || 'app'}:${req.ip || 'unknown'}`;
   const now = Date.now();
   const last = recentRequests.get(key) || 0;
-  if (now - last < 30_000) {
-    throw Object.assign(new Error('Please wait 30 seconds before generating another avatar'), { statusCode: 429 });
+  if (now - last < cooldownMs) {
+    throw Object.assign(new Error(`Please wait ${Math.ceil(cooldownMs / 1000)} seconds before trying again`), { statusCode: 429 });
   }
   recentRequests.set(key, now);
   if (recentRequests.size > 5000) {
@@ -65,7 +65,7 @@ exports.generateAvatar = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
 
     try {
-      await verifyAppCheckAndRateLimit(req);
+      await verifyAppCheckAndRateLimit(req, 'avatar', 30_000);
       const input = parseDataUrl(req.body?.imageBase64);
       const stylePath = path.join(__dirname, 'assets', 'AvatarStyleReference.jpeg');
       const styleData = fs.readFileSync(stylePath).toString('base64');
@@ -102,4 +102,41 @@ exports.generateAvatar = async (req, res) => {
       console.error(error);
       return res.status(error.statusCode || 500).json({ error: error.message || 'Internal error' });
     }
+};
+
+exports.generateQr = async (req, res) => {
+  setCors(req, res);
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (!allowedOrigins.has(req.headers.origin)) return res.status(403).json({ error: 'Origin not allowed' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
+
+  try {
+    await verifyAppCheckAndRateLimit(req, 'qr', 3_000);
+    const input = parseDataUrl(req.body?.imageBase64);
+    const endpoint = 'https://optima-software-solutions.com/sts/stsimageqr/api.php';
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        const form = new FormData();
+        form.append('image', new Blob([Buffer.from(input.data, 'base64')], { type: input.mimeType }), 'mcdonalds_avatar.jpg');
+        const response = await fetch(endpoint, { method: 'POST', body: form, signal: AbortSignal.timeout(30_000) });
+        const raw = await response.text();
+        if (!response.ok) throw new Error(`QR service returned ${response.status}`);
+        let result;
+        try { result = JSON.parse(raw); }
+        catch (_) { throw new Error('QR service returned an invalid response'); }
+        const qrValue = result.qr_code_url || result.qr_url || result.data?.qr_code_url || result.data?.qr_url;
+        const success = typeof result.success === 'boolean' ? result.success : Boolean(qrValue);
+        if (!success || !qrValue) throw new Error(result.message || 'QR service returned no QR image');
+        return res.status(200).json({ qrCodeUrl: new URL(qrValue, endpoint).toString() });
+      } catch (error) {
+        lastError = error;
+        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
+      }
+    }
+    throw lastError || new Error('QR generation failed');
+  } catch (error) {
+    console.error(error);
+    return res.status(error.statusCode || 502).json({ error: error.message || 'QR generation failed' });
+  }
 };

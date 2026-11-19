@@ -1,6 +1,7 @@
 // Paste the deployed Firebase Function URL here after deployment.
 window.PHOTO_BOOTH_CONFIG = {
   avatarEndpoint: 'https://us-central1-gen-lang-client-0899943261.cloudfunctions.net/generate-avatar',
+  qrEndpoint: 'https://us-central1-gen-lang-client-0899943261.cloudfunctions.net/generate-qr',
   recaptchaEnterpriseSiteKey: '6LewTiguAAAAAM571MzC_Dv7MpPHcItzJvN6lfvn',
   firebase: {
     apiKey: 'AIzaSyDHKf1JnGVwnNOz2pf9EuKVeZ_injthOOk',
