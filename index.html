@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#449bcf">
+  <title>myCIB Photo Booth</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="booth" aria-live="polite">
+    <section id="startPage" class="page active">
+      <video id="startVideo" class="background" src="assets/StartScreen.mp4" muted loop playsinline preload="auto" poster="assets/StartScreen.jpeg"></video>
+      <button id="startButton" class="full-hit" type="button" aria-label="Start photo booth"></button>
+    </section>
+
+    <section id="capturePage" class="page">
+      <img class="background" src="assets/CaptureScreen.jpeg" alt="">
+      <div class="photo-window"><video id="camera" autoplay muted playsinline></video></div>
+      <div id="cameraMessage" class="status"></div>
+      <button id="homeFromCamera" class="hit home-camera" type="button" aria-label="Home"></button>
+      <button id="captureButton" class="hit capture" type="button" aria-label="Take photo"></button>
+    </section>
+
+    <section id="processingPage" class="page">
+      <img class="background" src="assets/ProcessingScreen.jpeg" alt="">
+      <div class="photo-window"><img id="processingImage" alt="Captured photo"></div>
+      <div class="busy"><span></span><p id="processingText">Creating your avatar…</p></div>
+    </section>
+
+    <section id="resultPage" class="page">
+      <img class="background" src="assets/ResultScreen.jpeg" alt="">
+      <div class="photo-window"><img id="resultImage" alt="Your generated avatar"></div>
+      <button id="retakeButton" class="hit retake" type="button" aria-label="Retake"></button>
+      <button id="qrButton" class="hit qr" type="button" aria-label="Get QR code"></button>
+      <button id="homeFromResult" class="hit home-result" type="button" aria-label="Home"></button>
+    </section>
+
+    <dialog id="qrDialog">
+      <button id="closeQr" type="button" aria-label="Close">×</button>
+      <h2>Scan to get your photo</h2>
+      <div id="qrCode"></div>
+      <a id="downloadPhoto" download="my-cib-avatar.jpg">Download photo</a>
+    </dialog>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
