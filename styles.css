@@ -31,7 +31,3 @@ dialog::backdrop { background:#001427cc; }
 #qrCode img, #qrCode canvas { max-width:100%; height:auto!important; }
 #downloadPhoto { display:inline-block; margin-top:18px; padding:14px 22px; border-radius:12px; color:white; background:#316aa7; text-decoration:none; font-weight:bold; }
 @media (orientation:landscape) { #booth { height:var(--app-height); width:calc(var(--app-height) * .562799); } }
-
-.style-picker { position:absolute; top:13%; left:15.4091%; width:69.1817%; display:flex; align-items:center; justify-content:center; gap:.5rem; color:#fff; font-size:clamp(12px,1.8vh,24px); font-weight:bold; }
-.style-picker select { min-width:0; max-width:65%; padding:.45em .65em; border:2px solid #ffcd00; border-radius:.6em; background:#fff; color:#222; font:inherit; }
-.style-picker select:focus-visible { outline:3px solid #fff; outline-offset:3px; }
