@@ -17,6 +17,16 @@ let finalImage = '';
 let remoteImageUrl = '';
 let countdownRun = 0;
 
+function syncViewportHeight() {
+  const visibleHeight = Math.round(window.visualViewport?.height || window.innerHeight);
+  document.documentElement.style.setProperty('--app-height', `${visibleHeight}px`);
+}
+
+syncViewportHeight();
+window.addEventListener('resize', syncViewportHeight, { passive: true });
+window.addEventListener('orientationchange', () => setTimeout(syncViewportHeight, 150), { passive: true });
+window.visualViewport?.addEventListener('resize', syncViewportHeight, { passive: true });
+
 function showPage(id) {
   pages.forEach((page) => page.classList.toggle('active', page.id === id));
 }
