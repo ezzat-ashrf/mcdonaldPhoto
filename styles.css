@@ -13,7 +13,7 @@ body { display:grid; place-items:center; touch-action:manipulation; }
 .photo-window video, .photo-window img { width:100%; height:100%; display:block; object-fit:cover; object-position:center; }
 .countdown { position:absolute; left:15.4091%; top:20.9928%; width:69.1817%; height:58.1938%; z-index:4; display:grid; place-items:center; color:#ffcd00; font-size:clamp(130px,24vh,330px); font-weight:900; line-height:1; text-shadow:0 8px 0 #b00000,0 12px 30px #300000cc; pointer-events:none; }
 .countdown[hidden] { display:none; }
-.camera-switch { position:absolute; z-index:6; top:22.5%; right:17%; width:10%; aspect-ratio:1; display:grid; place-items:center; padding:0; border:2px solid #ffcd00; border-radius:50%; background:#b50000e6; color:#ffcd00; font-size:clamp(24px,4.2vh,58px); font-weight:900; line-height:1; box-shadow:0 4px 14px #40000088; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.camera-switch { position:absolute; z-index:6; top:85%; left:69%; width:12%; aspect-ratio:1; display:grid; place-items:center; padding:0; border:2px solid #ffcd00; border-radius:50%; background:#b50000e6; color:#ffcd00; font-size:clamp(22px,3.6vh,52px); font-weight:900; line-height:1; box-shadow:0 4px 14px #40000088; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .camera-switch:disabled { opacity:.5; cursor:default; }
 .camera-switch:focus-visible { outline:3px solid #fff; outline-offset:3px; }
 .home-camera { left:13.8%; top:84.7%; width:15%; height:9%; border-radius:50%; }
