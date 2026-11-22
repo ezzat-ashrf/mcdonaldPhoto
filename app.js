@@ -16,6 +16,7 @@ let stream = null;
 let finalImage = '';
 let remoteImageUrl = '';
 let countdownRun = 0;
+let cameraFacingMode = 'user';
 
 function syncViewportHeight() {
   const visibleHeight = Math.round(window.visualViewport?.height || window.innerHeight);
@@ -49,15 +50,39 @@ async function openCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: { ideal: 'user' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: { facingMode: { ideal: cameraFacingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
     });
     $('camera').srcObject = stream;
     await $('camera').play();
+    updateCameraSwitchLabel();
   } catch (error) {
     $('cameraMessage').textContent = 'Camera unavailable. Allow camera permission and use HTTPS or localhost.';
     $('cameraMessage').style.display = 'block';
     console.error(error);
   }
+}
+
+function updateCameraSwitchLabel() {
+  const button = $('switchCameraButton');
+  const nextCamera = cameraFacingMode === 'user' ? 'back' : 'front';
+  button.setAttribute('aria-label', `Switch to ${nextCamera} camera`);
+  button.title = `Switch to ${nextCamera} camera`;
+}
+
+async function switchCamera() {
+  const button = $('switchCameraButton');
+  if (button.disabled) return;
+  cancelCountdown();
+  button.disabled = true;
+  const previousMode = cameraFacingMode;
+  cameraFacingMode = cameraFacingMode === 'user' ? 'environment' : 'user';
+  await openCamera();
+  if (!stream) {
+    cameraFacingMode = previousMode;
+    await openCamera();
+  }
+  updateCameraSwitchLabel();
+  button.disabled = false;
 }
 
 function captureJpeg() {
@@ -169,6 +194,8 @@ async function startCaptureCountdown() {
 function home() {
   cancelCountdown();
   stopCamera(); finalImage = ''; remoteImageUrl = '';
+  cameraFacingMode = 'user';
+  updateCameraSwitchLabel();
   showPage('startPage'); playStartVideo();
 }
 
@@ -236,6 +263,7 @@ async function showQr() {
 
 $('startButton').addEventListener('click', openCamera);
 $('captureButton').addEventListener('click', startCaptureCountdown);
+$('switchCameraButton').addEventListener('click', switchCamera);
 $('retakeButton').addEventListener('click', openCamera);
 $('homeFromCamera').addEventListener('click', home);
 $('homeFromResult').addEventListener('click', home);
