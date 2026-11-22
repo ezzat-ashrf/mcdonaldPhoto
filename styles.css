@@ -1,6 +1,6 @@
 :root { color-scheme: dark; font-family: Arial, sans-serif; --app-height:100dvh; }
 * { box-sizing: border-box; }
-html, body { width:100%; height:var(--app-height); margin:0; overflow:hidden; background:#101827; }
+html, body { width:100%; height:var(--app-height); margin:0; overflow:hidden; background:#c90000; }
 body { display:grid; place-items:center; touch-action:manipulation; }
 #booth { position:relative; width:min(100vw, calc(var(--app-height) * .562799)); height:min(var(--app-height), 177.6833vw); max-width:100vw; max-height:var(--app-height); aspect-ratio:941/1672; overflow:hidden; background:#c80000; }
 .page { position:absolute; inset:0; display:none; }
