@@ -287,7 +287,7 @@ async function composeQrFrame() {
   canvas.width = 941; canvas.height = 1672;
   const context = canvas.getContext('2d');
   context.drawImage(frame, 0, 0, canvas.width, canvas.height);
-  const target = { x: 145, y: 352, width: 651, height: 971 };
+  const target = { x: 146, y: 353, width: 649, height: 968 };
   const sourceAspect = photo.naturalWidth / photo.naturalHeight;
   const targetAspect = target.width / target.height;
   let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
