@@ -142,7 +142,13 @@ async function prepareSolidAndTransparentImages(imageSource) {
     const green = source.data[offset + 1];
     const blue = source.data[offset + 2];
     const distance = Math.hypot(red - target[0], green - target[1], blue - target[2]);
-    return distance < 145 && red > 135 && green > 75 && blue < 125 && red >= green;
+    // Only accept pixels very close to the required flat backdrop color.
+    // The previous broad threshold could connect through warm skin tones and
+    // incorrectly paint parts of the subject yellow.
+    return distance < 50
+      && red >= 185 && red <= 245
+      && green >= 125 && green <= 195
+      && blue < 45;
   }
 
   function enqueue(pixel) {
