@@ -117,6 +117,71 @@ async function generateAvatar(captured) {
   throw new Error('Avatar server returned no image');
 }
 
+async function prepareSolidAndTransparentImages(imageSource) {
+  const image = await loadImage(imageSource);
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(image, 0, 0);
+  const source = context.getImageData(0, 0, canvas.width, canvas.height);
+  const solid = new ImageData(new Uint8ClampedArray(source.data), canvas.width, canvas.height);
+  const transparent = new ImageData(new Uint8ClampedArray(source.data), canvas.width, canvas.height);
+  const width = canvas.width;
+  const height = canvas.height;
+  const pixels = width * height;
+  const mask = new Uint8Array(pixels);
+  const queue = new Int32Array(pixels);
+  let head = 0;
+  let tail = 0;
+  const target = [221, 163, 2];
+
+  function isYellowBackground(pixel) {
+    const offset = pixel * 4;
+    const red = source.data[offset];
+    const green = source.data[offset + 1];
+    const blue = source.data[offset + 2];
+    const distance = Math.hypot(red - target[0], green - target[1], blue - target[2]);
+    return distance < 145 && red > 135 && green > 75 && blue < 125 && red >= green;
+  }
+
+  function enqueue(pixel) {
+    if (pixel < 0 || pixel >= pixels || mask[pixel] || !isYellowBackground(pixel)) return;
+    mask[pixel] = 1;
+    queue[tail++] = pixel;
+  }
+
+  for (let x = 0; x < width; x += 1) { enqueue(x); enqueue((height - 1) * width + x); }
+  for (let y = 1; y < height - 1; y += 1) { enqueue(y * width); enqueue(y * width + width - 1); }
+  while (head < tail) {
+    const pixel = queue[head++];
+    const x = pixel % width;
+    if (x > 0) enqueue(pixel - 1);
+    if (x < width - 1) enqueue(pixel + 1);
+    if (pixel >= width) enqueue(pixel - width);
+    if (pixel < pixels - width) enqueue(pixel + width);
+  }
+
+  for (let pixel = 0; pixel < pixels; pixel += 1) {
+    if (!mask[pixel]) continue;
+    const offset = pixel * 4;
+    solid.data[offset] = target[0];
+    solid.data[offset + 1] = target[1];
+    solid.data[offset + 2] = target[2];
+    solid.data[offset + 3] = 255;
+    transparent.data[offset] = 0;
+    transparent.data[offset + 1] = 0;
+    transparent.data[offset + 2] = 0;
+    transparent.data[offset + 3] = 0;
+  }
+
+  context.putImageData(solid, 0, 0);
+  const solidImage = canvas.toDataURL('image/png');
+  context.putImageData(transparent, 0, 0);
+  const transparentImage = canvas.toDataURL('image/png');
+  return { solidImage, transparentImage };
+}
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function sendToFirebase(imageBase64) {
   const body = {
@@ -152,11 +217,13 @@ async function capture() {
     $('processingImage').src = captured;
     $('processingText').textContent = 'Creating your avatar…';
     showPage('processingPage');
-    finalImage = await generateAvatar(captured);
+    const generatedImage = await generateAvatar(captured);
+    const preparedImages = await prepareSolidAndTransparentImages(generatedImage);
+    finalImage = preparedImages.solidImage;
     $('resultImage').src = finalImage;
     showPage('resultPage');
     try {
-      remoteImageUrl = await sendToFirebase(finalImage);
+      remoteImageUrl = await sendToFirebase(preparedImages.transparentImage);
       console.info('Firebase submission:', remoteImageUrl);
     } catch (error) { console.warn('Firebase upload failed:', error); }
   } catch (error) {
