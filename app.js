@@ -223,7 +223,7 @@ async function capture() {
     $('resultImage').src = finalImage;
     showPage('resultPage');
     try {
-      remoteImageUrl = await sendToFirebase(preparedImages.transparentImage);
+      remoteImageUrl = await sendToFirebase(preparedImages.solidImage);
       console.info('Firebase submission:', remoteImageUrl);
     } catch (error) { console.warn('Firebase upload failed:', error); }
   } catch (error) {
